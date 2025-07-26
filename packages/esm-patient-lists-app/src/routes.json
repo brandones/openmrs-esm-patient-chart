@@ -10,20 +10,18 @@
       "slot": "action-menu-patient-chart-items-slot"
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "patient-lists",
-      "title": "patientListsWorkspaceTitle",
       "component": "patientListsWorkspace",
-      "type": "patient-lists",
+      "window": "patient-lists",
       "canHide": false,
       "width": "wider"
     },
     {
       "name": "patient-list-details",
-      "title": "patientListDetailWorkspaceTitle",
       "component": "patientListDetailsWorkspace",
-      "type": "patient-lists",
+      "window": "patient-lists",
       "canHide": false,
       "width": "wider"
     }

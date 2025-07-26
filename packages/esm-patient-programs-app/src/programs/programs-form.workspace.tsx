@@ -27,6 +27,9 @@ import {
   useConfig,
   useLayoutType,
   useSession,
+  ExtensionSlot,
+  usePatient,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import { type ConfigObject } from '../config-schema';
@@ -40,7 +43,8 @@ import {
 import styles from './programs-form.scss';
 
 interface ProgramsFormProps extends DefaultPatientWorkspaceProps {
-  programEnrollmentId?: string;
+  formContext: 'creating' | 'editing';
+  program?: PatientProgram;
 }
 
 const createProgramsFormSchema = (t: TFunction) =>
@@ -57,9 +61,9 @@ export type ProgramsFormData = z.infer<ReturnType<typeof createProgramsFormSchem
 const ProgramsForm: React.FC<ProgramsFormProps> = ({
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
+  formContext,
+  program,
   patientUuid,
-  programEnrollmentId,
-  promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -67,20 +71,19 @@ const ProgramsForm: React.FC<ProgramsFormProps> = ({
   const { data: availablePrograms } = useAvailablePrograms();
   const { data: enrollments, mutateEnrollments } = useEnrollments(patientUuid);
   const { showProgramStatusField } = useConfig<ConfigObject>();
-  const inEditMode = Boolean(programEnrollmentId);
+  const inEditMode = Boolean(program?.uuid);
 
   const programsFormSchema = useMemo(() => createProgramsFormSchema(t), [t]);
 
-  const currentEnrollment = programEnrollmentId && enrollments.filter((e) => e.uuid === programEnrollmentId)[0];
-  const currentProgram = currentEnrollment
+  const currentEnrollment = program
     ? {
-        display: currentEnrollment.program.name,
-        ...currentEnrollment.program,
+        display: program.name,
+        ...program,
       }
     : null;
 
-  const eligiblePrograms = currentProgram
-    ? [currentProgram]
+  const eligiblePrograms = currentEnrollment
+    ? [currentEnrollment]
     : availablePrograms.filter((program) => {
         const enrollment = enrollments.find((e) => e.program.uuid === program.uuid);
         return !enrollment || enrollment.dateCompleted !== null;
@@ -113,10 +116,6 @@ const ProgramsForm: React.FC<ProgramsFormProps> = ({
   });
 
   const selectedProgram = useWatch({ control, name: 'selectedProgram' });
-
-  useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-  }, [isDirty, promptBeforeClosing]);
 
   const onSubmit = useCallback(
     async (data: ProgramsFormData) => {
@@ -168,7 +167,7 @@ const ProgramsForm: React.FC<ProgramsFormProps> = ({
 
   const programName = (
     <FormGroup legendText={t('programName', 'Program name')}>
-      <FormLabel className={styles.programName}>{currentProgram?.display}</FormLabel>
+      <FormLabel className={styles.programName}>{currentEnrollment?.display}</FormLabel>
     </FormGroup>
   );
 
@@ -256,11 +255,11 @@ const ProgramsForm: React.FC<ProgramsFormProps> = ({
   );
 
   let workflowStates = [];
-  if (!currentProgram && !!selectedProgram) {
+  if (!currentEnrollment && !!selectedProgram) {
     const program = eligiblePrograms.find((p) => p.uuid === selectedProgram);
     if (program?.allWorkflows.length > 0) workflowStates = program.allWorkflows[0].states;
-  } else if (currentProgram?.allWorkflows.length > 0) {
-    workflowStates = currentProgram.allWorkflows[0].states;
+  } else if (currentEnrollment?.allWorkflows.length > 0) {
+    workflowStates = currentEnrollment.allWorkflows[0].states;
   }
 
   const programStatusDropdown = (
@@ -326,36 +325,38 @@ const ProgramsForm: React.FC<ProgramsFormProps> = ({
   }
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-      <Stack className={styles.formContainer} gap={7}>
-        {!availablePrograms.length && (
-          <InlineNotification
-            className={styles.notification}
-            kind="error"
-            lowContrast
-            subtitle={t('configurePrograms', 'Please configure programs to continue.')}
-            title={t('noProgramsConfigured', 'No programs configured')}
-          />
-        )}
-        {formGroups.map((group, i) => (
-          <FormGroup style={group.style} legendText={group.legendText} key={i}>
-            <div className={styles.selectContainer}>{isTablet ? <Layer>{group.value}</Layer> : group.value}</div>
-          </FormGroup>
-        ))}
-      </Stack>
-      <ButtonSet className={classNames(isTablet ? styles.tablet : styles.desktop)}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {getCoreTranslation('cancel')}
-        </Button>
-        <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
-          {isSubmitting ? (
-            <InlineLoading description={t('saving', 'Saving') + '...'} />
-          ) : (
-            <span>{t('saveAndClose', 'Save and close')}</span>
+    <Workspace2 title={t('programEnrollmentWorkspaceTitle', 'Program enrollment')} hasUnsavedChanges={isDirty}>
+      <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <Stack className={styles.formContainer} gap={7}>
+          {!availablePrograms.length && (
+            <InlineNotification
+              className={styles.notification}
+              kind="error"
+              lowContrast
+              subtitle={t('configurePrograms', 'Please configure programs to continue.')}
+              title={t('noProgramsConfigured', 'No programs configured')}
+            />
           )}
-        </Button>
-      </ButtonSet>
-    </Form>
+          {formGroups.map((group, i) => (
+            <FormGroup style={group.style} legendText={group.legendText} key={i}>
+              <div className={styles.selectContainer}>{isTablet ? <Layer>{group.value}</Layer> : group.value}</div>
+            </FormGroup>
+          ))}
+        </Stack>
+        <ButtonSet className={classNames(isTablet ? styles.tablet : styles.desktop)}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {getCoreTranslation('cancel')}
+          </Button>
+          <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
+            {isSubmitting ? (
+              <InlineLoading description={t('saving', 'Saving') + '...'} />
+            ) : (
+              <span>{t('saveAndClose', 'Save and close')}</span>
+            )}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

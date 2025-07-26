@@ -20,12 +20,11 @@
       "order": 1
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "visit-notes-form-workspace",
-      "title": "visitNoteWorkspaceTitle",
       "component": "visitNotesFormWorkspace",
-      "type": "visit-note",
+      "window": "visit-note",
       "canHide": true
     }
   ]
