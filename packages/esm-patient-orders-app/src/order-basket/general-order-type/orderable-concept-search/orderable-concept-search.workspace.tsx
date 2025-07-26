@@ -8,6 +8,7 @@ import {
   useConfig,
   useDebounce,
   useLayoutType,
+  Workspace2,
   type DefaultWorkspaceProps,
 } from '@openmrs/esm-framework';
 import {
@@ -88,7 +89,8 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
   );
 
   return (
-    <div className={styles.workspaceWrapper}>
+    <Workspace2 title={t('searchOrderables', 'Search orderables')} hasUnsavedChanges={false}>
+      <div className={styles.workspaceWrapper}>
       {!isTablet && (
         <div className={styles.backButton}>
           <Button
@@ -190,6 +192,7 @@ function ConceptSearch({ closeWorkspace, orderTypeUuid, openOrderForm, orderable
         </div>
       )}
     </div>
+    </Workspace2>
   );
 }
 

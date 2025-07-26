@@ -10,6 +10,7 @@ import {
   useLayoutType,
   useSession,
   useVisit,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
@@ -28,7 +29,6 @@ const OrderBasket: React.FC<DefaultPatientWorkspaceProps> = ({
   patientUuid,
   closeWorkspace,
   closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -49,9 +49,7 @@ const OrderBasket: React.FC<DefaultPatientWorkspaceProps> = ({
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
   const { mutate: mutateCurrentVisit } = useVisit(patientUuid);
 
-  useEffect(() => {
-    promptBeforeClosing(() => !!orders.length);
-  }, [orders, promptBeforeClosing]);
+
 
   const openStartVisitDialog = useCallback(() => {
     const dispose = showModal('start-visit-dialog', {
@@ -125,7 +123,7 @@ const OrderBasket: React.FC<DefaultPatientWorkspaceProps> = ({
   }, [clearOrders, closeWorkspace]);
 
   return (
-    <>
+    <Workspace2 title={t('orderBasketWorkspaceTitle', 'Order Basket')} hasUnsavedChanges={!!orders.length}>
       <div className={styles.container}>
         <ExtensionSlot name="visit-context-header-slot" state={{ patientUuid }} />
         <div className={styles.orderBasketContainer}>
@@ -206,7 +204,7 @@ const OrderBasket: React.FC<DefaultPatientWorkspaceProps> = ({
           hasFocus
         />
       )}
-    </>
+    </Workspace2>
   );
 };
 
